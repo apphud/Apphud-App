@@ -1,0 +1,6 @@
+framework module Pods_Apphud {
+  umbrella header "Pods-Apphud-umbrella.h"
+
+  export *
+  module * { export * }
+}

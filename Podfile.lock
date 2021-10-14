@@ -1,0 +1,34 @@
+PODS:
+  - Alamofire (5.2.2)
+  - AnyCodable-FlightSchool (0.4.0)
+  - Introspect (0.1.0)
+  - Kingfisher/Core (5.15.5)
+  - Kingfisher/SwiftUI (5.15.5):
+    - Kingfisher/Core
+  - SwiftUIRefresh (0.0.3):
+    - Introspect (~> 0.1.0)
+
+DEPENDENCIES:
+  - Alamofire
+  - AnyCodable-FlightSchool (~> 0.4.0)
+  - Kingfisher/SwiftUI
+  - SwiftUIRefresh
+
+SPEC REPOS:
+  trunk:
+    - Alamofire
+    - AnyCodable-FlightSchool
+    - Introspect
+    - Kingfisher
+    - SwiftUIRefresh
+
+SPEC CHECKSUMS:
+  Alamofire: 814429acc853c6c54ff123fc3d2ef66803823ce0
+  AnyCodable-FlightSchool: 9bf42632b5256c78710e2f4fb18ce78e89180883
+  Introspect: ad32f2b7b9e7ac2c008b9dfec3d5325fbd3660fa
+  Kingfisher: e3ec347a5ab8817b7585ef46923a2d2b9a7d8fbe
+  SwiftUIRefresh: ca6ae2718d25aad5dd68bbf5d2ae36ef6ade98bf
+
+PODFILE CHECKSUM: 476fcf22d1968f08b56f9e705713683194838a5a
+
+COCOAPODS: 1.10.1
