@@ -47,53 +47,43 @@
 				</dict>
 				<dict>
 					<key>INEnumValueDisplayName</key>
-					<string>Week</string>
+					<string>Last 7 Days</string>
 					<key>INEnumValueDisplayNameID</key>
 					<string>UYrcLo</string>
 					<key>INEnumValueIndex</key>
 					<integer>3</integer>
 					<key>INEnumValueName</key>
-					<string>week</string>
+					<string>last_7_days</string>
 				</dict>
 				<dict>
 					<key>INEnumValueDisplayName</key>
-					<string>Month</string>
+					<string>Last 28 days</string>
 					<key>INEnumValueDisplayNameID</key>
 					<string>V4vmFI</string>
 					<key>INEnumValueIndex</key>
 					<integer>4</integer>
 					<key>INEnumValueName</key>
-					<string>four_weeks</string>
+					<string>last_28_days</string>
 				</dict>
 				<dict>
 					<key>INEnumValueDisplayName</key>
-					<string>3 Months</string>
+					<string>Last Month</string>
 					<key>INEnumValueDisplayNameID</key>
 					<string>xgwpHp</string>
 					<key>INEnumValueIndex</key>
 					<integer>5</integer>
 					<key>INEnumValueName</key>
-					<string>three_months</string>
+					<string>last_month</string>
 				</dict>
 				<dict>
 					<key>INEnumValueDisplayName</key>
-					<string>Year</string>
+					<string>This Month</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>6qGPuM</string>
+					<string>2qJFiV</string>
 					<key>INEnumValueIndex</key>
 					<integer>6</integer>
 					<key>INEnumValueName</key>
-					<string>year</string>
-				</dict>
-				<dict>
-					<key>INEnumValueDisplayName</key>
-					<string>Lifetime</string>
-					<key>INEnumValueDisplayNameID</key>
-					<string>DZyG1o</string>
-					<key>INEnumValueIndex</key>
-					<integer>7</integer>
-					<key>INEnumValueName</key>
-					<string>lifetime</string>
+					<string>this_month</string>
 				</dict>
 			</array>
 		</dict>
@@ -216,11 +206,11 @@
 	<key>INIntentDefinitionNamespace</key>
 	<string>88xZPY</string>
 	<key>INIntentDefinitionSystemVersion</key>
-	<string>20D91</string>
+	<string>23D56</string>
 	<key>INIntentDefinitionToolsBuildVersion</key>
-	<string>12D4e</string>
+	<string>15E204a</string>
 	<key>INIntentDefinitionToolsVersion</key>
-	<string>12.4</string>
+	<string>15.3</string>
 	<key>INIntents</key>
 	<array>
 		<dict>
@@ -233,7 +223,7 @@
 			<key>INIntentIneligibleForSuggestions</key>
 			<true/>
 			<key>INIntentLastParameterTag</key>
-			<integer>6</integer>
+			<integer>7</integer>
 			<key>INIntentName</key>
 			<string>Configuration</string>
 			<key>INIntentParameters</key>
@@ -258,6 +248,10 @@
 						<dict>
 							<key>INIntentParameterPromptDialogCustom</key>
 							<true/>
+							<key>INIntentParameterPromptDialogFormatString</key>
+							<string>Select Apps</string>
+							<key>INIntentParameterPromptDialogFormatStringID</key>
+							<string>UKwdJv</string>
 							<key>INIntentParameterPromptDialogType</key>
 							<string>Configuration</string>
 						</dict>
@@ -270,8 +264,10 @@
 					</array>
 					<key>INIntentParameterSupportsDynamicEnumeration</key>
 					<true/>
+					<key>INIntentParameterSupportsMultipleValues</key>
+					<true/>
 					<key>INIntentParameterTag</key>
-					<integer>2</integer>
+					<integer>7</integer>
 					<key>INIntentParameterType</key>
 					<string>Object</string>
 				</dict>

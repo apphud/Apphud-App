@@ -21,6 +21,11 @@ class AppsManager {
             app.id == id
         })
     }
+    
+    func findApps(_ ids: [String]) -> [AHApp] {
+        return getIntentApps().filter({ ids.contains($0.id) })
+    }
+
 
     func fetchApps(completion: @escaping ([AHApp]?) -> Void) {
         NetworkService.shared.fetchApps { (apps) in
@@ -28,22 +33,18 @@ class AppsManager {
         }
     }
     
-    var currentApp: AHApp? {
+    var currentApps: [AHApp]? {
         guard apps.count > 0 else { return nil }
         
-        let id = defaults.string(forKey: Constants.CURRENT_APP_KEY)
+        let ids = defaults.string(forKey: Constants.CURRENT_APPS_KEY)
         
-        if let curr = apps.last(where: { (app) -> Bool in
-            app.id == id
-        }) {
-            return curr
-        }
+        var idsArray = ids?.components(separatedBy: ",")
         
-        return apps.first
+        return apps.filter({ idsArray?.contains($0.id) ?? false })
     }
     
-    func selectApp(_ app: AHApp) {
-        saveObject(app, key: Constants.CURRENT_APP_KEY)
+    func selectApps(_ apps: [AHApp]) {
+        defaults.set(apps.map { $0.id }.joined(separator: ","), forKey: Constants.CURRENT_APPS_KEY)
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -58,14 +59,6 @@ class AppsManager {
         }
     }
     
-    private func saveObject<T: Encodable>(_ item: T, key: String) {
-        let encoder = JSONEncoder()
-        
-        if let encoded = try? encoder.encode(item) {
-            defaults.set(encoded, forKey: key)
-        }
-    }
-
     func getIntentApps() -> [AHApp] {
         var apps: [AHApp] = []
 

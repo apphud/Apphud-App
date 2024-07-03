@@ -9,30 +9,30 @@ import SwiftUI
 import struct Kingfisher.KFImage
 import SwiftUIRefresh
 import WidgetKit
-import TTProgressHUD
 
 struct DashboardView: View {
     @EnvironmentObject var session: SessionStore
     @State var showingChooseApps = false
     @State private var isRefreshing = false
-    @State private var startTime: Date = Date().daysFromNow(-1).startOfDay
-    @State private var endTime = Date().endOfDay
-    @State private var selectedPeriod: IntentPeriod = .today
+    @State private var startTime = Date.getUTCStartEndTime(from: Date().timeIntervalSince1970)?.startTime ?? Date()
+    @State private var endTime = Date.getUTCStartEndTime(from: Date().timeIntervalSince1970)?.endTime ?? Date()
+    @State private var selectedPeriod: IntentPeriod? = .today
     @State private var showingLogoutActionSheet = false
     @Environment(\.colorScheme) var colorScheme
     
+    @State private var datesPickerVisible = false
+    
     var body: some View {
         NavigationView {
-            ZStack {
                 VStack {
-                    if session.currentApp == nil {
-                        Text("No app selected")
+                    if session.currentApps == nil {
+                        Text("No app(s) selected")
                     } else {
                         
-                        if let dash = session.dashboard {
-                            
-                            datePickerView()
-                            
+                        appsTitleView()
+                        dateButtonView()
+                        
+                        if let dash = session.dashboard, !session.isLoading {
                             List {
                                 ForEach(dash.groups, id:\.uniqueName) { section in
                                     Section(header: HStack {
@@ -62,30 +62,13 @@ struct DashboardView: View {
                                 }
                             }
                             .listStyle(PlainListStyle()).listSeparatorStyle()
-                            .pullToRefresh(isShowing: $isRefreshing) {
-                                fetchDashboard()
-                            }
+                        } else {
+                            Text("Loading data, please wait...").frame(maxHeight: .infinity).font(.caption2).opacity(0.7).bold()
                         }
                     }
                 }
-            }
-            .navigationBarTitle("Dashboard".t)
-            .navigationBarItems(leading: Button(action: chooseAppTapped, label: {
-                AppNameView()
-                    .environmentObject(session)
-                    .frame(maxWidth:280)
-            }).sheet(isPresented: $showingChooseApps) {
-                ChooseAppView().environmentObject(session)
-            }
-            .actionSheet(isPresented: $showingLogoutActionSheet, content: {
-                ActionSheet(title: Text("Confirm log out"), message: nil, buttons: [
-                    .destructive(Text("Log out"), action: {
-                        self.session.logout()
-                    }),
-                    .cancel()
-                ])
-            })
-            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)), trailing: Button(action: logoutTapped, label: {
+                .navigationBarTitle("Dashboard".t, displayMode: .inline)
+            .navigationBarItems(trailing: Button(action: logoutTapped, label: {
                 if let user = session.session, let url = URL(string: user.avatarUrl) {
                     KFImage(url).resizable()
                         .aspectRatio(contentMode: .fit)
@@ -95,8 +78,22 @@ struct DashboardView: View {
                 }
             })).onAppear(perform: session.fetchApps)
         }
+        .overlay(content: {
+            if (datesPickerVisible) {
+                datesPickerView()
+            } else {
+                EmptyView()
+            }
+        })
     }
 
+    func setPeriod(_ period: IntentPeriod) {
+        
+        selectedPeriod = period
+        datesPickerVisible.toggle()
+        fetchDashboard()
+    }
+    
     func logoutTapped() {
         self.showingLogoutActionSheet = true
     }
@@ -106,38 +103,113 @@ struct DashboardView: View {
     }
 
     func fetchDashboard() {
-        guard let appID = session.currentApp?.id else {return}
+        guard let apps = session.currentApps else {return}
+        let appIDs = apps.map { $0.id }
         self.isRefreshing = true
+        datesPickerVisible = false
         
-        session.fetchDashboardFor(appID: appID, startTime: startTime.startOfDay.utcString, endTime: endTime.endOfDay.utcString, fromWidget: false) { _ in
-            self.isRefreshing = false
+        if let period = selectedPeriod {
+            session.fetchDashboardsFor(appIDs: appIDs, period: period, fromWidget: false) { _ in
+                self.isRefreshing = false
+            }
+        } else {
+            session.fetchDashboardsFor(appIDs: appIDs, startTime: startTime.startOfDay.utcString, endTime: endTime.endOfDay.utcString, fromWidget: false) { _ in
+                self.isRefreshing = false
+            }
         }
     }
     
     @ViewBuilder
+    func appsTitleView() -> some View {
+        Button(action: chooseAppTapped, label: {
+            AppNameView()
+                .environmentObject(session)
+        }).sheet(isPresented: $showingChooseApps) {
+            ChooseAppView(selections: session.currentApps ?? []).environmentObject(session)
+        }
+        .actionSheet(isPresented: $showingLogoutActionSheet, content: {
+            ActionSheet(title: Text("Confirm log out"), message: nil, buttons: [
+                .destructive(Text("Log out"), action: {
+                    self.session.logout()
+                }),
+                .cancel()
+            ])
+        })
+        .padding()
+    }
+    
+    func pickerButtonTitle() -> String {
+        if let period = selectedPeriod {
+            return period.periodTitle()
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd MMM"
+            return formatter.string(from: startTime) + " – " + formatter.string(from: endTime)
+        }
+    }
+    
+    @ViewBuilder
+    func dateButtonView() -> some View {
+        VStack {
+            Text("Viewing data for").font(.system(size: 10)).opacity(0.5).bold()
+            Button(pickerButtonTitle()) {
+                datesPickerVisible.toggle()
+            }.bold()
+        }
+    }
+    
+    @ViewBuilder
+    func datesPickerView() -> some View {
+        ZStack {
+            Color.black.opacity(0.3).onTapGesture {
+                datesPickerVisible.toggle()
+            }
+            VStack {
+                HStack {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button(IntentPeriod.today.periodTitle()) { setPeriod(.today) }
+                        Button(IntentPeriod.yesterday.periodTitle()) { setPeriod(.yesterday) }
+                        Button(IntentPeriod.last_7_days.periodTitle()) { setPeriod(.last_7_days) }
+                        Button(IntentPeriod.last_28_days.periodTitle()) { setPeriod(.last_28_days) }
+                        Button(IntentPeriod.last_month.periodTitle()) { setPeriod(.last_month) }
+                        Button(IntentPeriod.this_month.periodTitle()) { setPeriod(.this_month) }
+                    }.font(.callout).bold()
+                    datePickerView()
+                        .frame(width: 160)
+                }
+                Button("Apply") {
+                    selectedPeriod = nil
+                    fetchDashboard()
+                }
+                .font(.system(size: 16, weight: .heavy))
+                .padding(.top, 10)
+            }
+            .padding(.vertical, 20)
+            .padding(.horizontal, 20)
+            .background(Color.white)
+            .cornerRadius(10)
+            .padding(.horizontal, 20)
+        }.ignoresSafeArea()
+    }
+    
+    @ViewBuilder
     func datePickerView() -> some View {
-        HStack {
+        VStack(spacing: 10) {
             DatePicker("", selection: $startTime, in: ...Date(), displayedComponents: .date).onChange(of: startTime, perform: { value in
-                            fetchDashboard()
-                            
-                        })
+            })
             .environmentObject(session)
-//              .frame(maxWidth: .infinity)
-            
-            Text(" – ")
-                .foregroundColor((colorScheme == .dark ? Color.blue : Color.black)).frame(maxWidth: .infinity)
+            .foregroundColor((colorScheme == .dark ? Color.blue : Color.black))
+                        
             DatePicker("", selection: $endTime, in: ...Date(), displayedComponents: .date).onChange(of: endTime, perform: { value in
-                            fetchDashboard()
-                        })
+            })
             .environmentObject(session)
-//              .frame(maxWidth: .infinity)
-        }.padding(EdgeInsets(top: 0, leading: 30, bottom: 0, trailing: 30))
+        }
     }
 }
 
 struct DashboardView_Previews: PreviewProvider {
     static var previews: some View {
-        DashboardView().environmentObject(SessionStore())
+        DashboardView().environmentObject(SessionStore.mock())
     }
 }
 

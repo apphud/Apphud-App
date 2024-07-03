@@ -3,13 +3,13 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 52;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		1A616483268123860062EFD7 /* (null) in Sources */ = {isa = PBXBuildFile; };
 		1A7E3A5126825C3600107D9C /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7E3A5026825C3600107D9C /* WelcomeView.swift */; };
-		28846B43261F5A8700A3951D /* TTProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = 28846B42261F5A8700A3951D /* TTProgressHUD */; };
+		2868DC8B2C1726F3000AB9E0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2868DC8A2C1726F3000AB9E0 /* AppDelegate.swift */; };
 		59D6E2830BC335DF10DEC020 /* Pods_Apphud.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE65FB2FBEC3C41897A96202 /* Pods_Apphud.framework */; };
 		71FB8F0141F5A46DDB927742 /* Pods_ApphudIntentHandler.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 928645CA9CBC4DC6036C0CDA /* Pods_ApphudIntentHandler.framework */; };
 		CC85E5A889ADE35A21072458 /* Pods_WidgetsExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 177B00E48E06A01811BC8DB2 /* Pods_WidgetsExtension.framework */; };
@@ -124,6 +124,7 @@
 /* Begin PBXFileReference section */
 		177B00E48E06A01811BC8DB2 /* Pods_WidgetsExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WidgetsExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A7E3A5026825C3600107D9C /* WelcomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		2868DC8A2C1726F3000AB9E0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4F51C9E6A3D96C05B5F12422 /* Pods-Apphud.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Apphud.release.xcconfig"; path = "Target Support Files/Pods-Apphud/Pods-Apphud.release.xcconfig"; sourceTree = "<group>"; };
 		928645CA9CBC4DC6036C0CDA /* Pods_ApphudIntentHandler.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ApphudIntentHandler.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB55B399BB9168186CCE22D2 /* Pods-Apphud.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Apphud.debug.xcconfig"; path = "Target Support Files/Pods-Apphud/Pods-Apphud.debug.xcconfig"; sourceTree = "<group>"; };
@@ -204,7 +205,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				28846B43261F5A8700A3951D /* TTProgressHUD in Frameworks */,
 				CD74C810252CB9F5000621D5 /* SharedObjects in Frameworks */,
 				59D6E2830BC335DF10DEC020 /* Pods_Apphud.framework in Frameworks */,
 			);
@@ -286,6 +286,7 @@
 				CDFD4A3B2526183300988F01 /* Networking */,
 				CDFD4A352526182C00988F01 /* Models */,
 				CDFD4A23252617A400988F01 /* ApphudApp.swift */,
+				2868DC8A2C1726F3000AB9E0 /* AppDelegate.swift */,
 				CDFD4A27252617A700988F01 /* Assets.xcassets */,
 				CDFD4A2C252617A700988F01 /* Info.plist */,
 				CDFD4A29252617A700988F01 /* Preview Content */,
@@ -443,7 +444,6 @@
 			name = Apphud;
 			packageProductDependencies = (
 				CD74C80F252CB9F5000621D5 /* SharedObjects */,
-				28846B42261F5A8700A3951D /* TTProgressHUD */,
 			);
 			productName = Apphud;
 			productReference = CDFD4A20252617A400988F01 /* Apphud.app */;
@@ -479,7 +479,6 @@
 			);
 			mainGroup = CDFD4A17252617A400988F01;
 			packageReferences = (
-				28846B41261F5A8700A3951D /* XCRemoteSwiftPackageReference "TTProgressHUD" */,
 			);
 			productRefGroup = CDFD4A21252617A400988F01 /* Products */;
 			projectDirPath = "";
@@ -682,6 +681,7 @@
 				CDFD4A4F2526196F00988F01 /* NetworkModel.swift in Sources */,
 				CDCE02882527139600FA00BA /* SessionStore.swift in Sources */,
 				CD865EB925273ED80020048E /* String.swift in Sources */,
+				2868DC8B2C1726F3000AB9E0 /* AppDelegate.swift in Sources */,
 				CD5F3D5225262DD200BEC550 /* LoginView.swift in Sources */,
 				CDFD4A432526185100988F01 /* User.swift in Sources */,
 				CDCE028B25271B2300FA00BA /* LoaderView.swift in Sources */,
@@ -927,16 +927,17 @@
 				CODE_SIGN_ENTITLEMENTS = Apphud/Apphud.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.1;
+				CURRENT_PROJECT_VERSION = 1.2;
 				DEVELOPMENT_ASSET_PATHS = "\"Apphud/Preview Content\"";
 				DEVELOPMENT_TEAM = JLG6CF288G;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Apphud/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.apphud.dashboard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -955,16 +956,17 @@
 				CODE_SIGN_ENTITLEMENTS = Apphud/Apphud.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.1;
+				CURRENT_PROJECT_VERSION = 1.2;
 				DEVELOPMENT_ASSET_PATHS = "\"Apphud/Preview Content\"";
 				DEVELOPMENT_TEAM = JLG6CF288G;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Apphud/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.apphud.dashboard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1014,23 +1016,7 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		28846B41261F5A8700A3951D /* XCRemoteSwiftPackageReference "TTProgressHUD" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/honkmaster/TTProgressHUD";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.0.5;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
-		28846B42261F5A8700A3951D /* TTProgressHUD */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 28846B41261F5A8700A3951D /* XCRemoteSwiftPackageReference "TTProgressHUD" */;
-			productName = TTProgressHUD;
-		};
 		CD74C80F252CB9F5000621D5 /* SharedObjects */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SharedObjects;

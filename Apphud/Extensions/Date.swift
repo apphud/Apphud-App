@@ -7,6 +7,7 @@
 
 import Foundation
 
+
 extension DateFormatter {
     static let iso8601Full: DateFormatter = {
         let formatter = DateFormatter()
@@ -47,26 +48,49 @@ extension Date {
         return formatter.string(from: self)
     }
     
-    var startOfDay: Date {
-        Calendar.current.startOfDay(for: self)
-    }
-
     var endOfDay: Date {
-        var components = DateComponents()
-        components.day = 1
-        components.second = -1
-        return Calendar.current.date(byAdding: components, to: startOfDay) ?? self
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let startOfDay = calendar.startOfDay(for: self)
+        let endOfDay = calendar.date(byAdding: .second, value: 86399, to: startOfDay)
+        return endOfDay!
+    }
+    
+    var startOfDay: Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let startOfDay = calendar.startOfDay(for: self)
+        return startOfDay
+    }
+    
+    static func getUTCStartEndTime(from timestamp: TimeInterval) -> (startTime: Date, endTime: Date)? {
+        let date = Date(timeIntervalSince1970: timestamp)
+        
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let startOfDay = calendar.startOfDay(for: date)
+        
+        guard let endOfDay = calendar.date(byAdding: .second, value: 86399, to: startOfDay) else {
+            return nil
+        }
+        
+        return (startTime: startOfDay, endTime: endOfDay)
     }
     
     var startOfMonth: Date {
-        let components = Calendar.current.dateComponents([.year, .month], from: startOfDay)
-        return Calendar.current.date(from: components) ?? self
+        let dates = Self.getUTCStartEndTime(from: self.timeIntervalSince1970)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let components = calendar.dateComponents([.year, .month], from: dates?.startTime ?? self)
+        return calendar.date(from: components) ?? self
     }
 
     var endOfMonth: Date {
         var components = DateComponents()
         components.month = 1
         components.second = -1
-        return Calendar.current.date(byAdding: components, to: startOfMonth) ?? self
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar.date(byAdding: components, to: startOfMonth) ?? self
     }
 }

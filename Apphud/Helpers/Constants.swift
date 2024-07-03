@@ -12,7 +12,7 @@ struct Constants {
     static let JWT_TOKEN_KEY = "JWT_TOKEN_KEY"
     static let REFRESH_TOKEN_KEY = "REFRESH_TOKEN_KEY"
     static let CURRENT_USER_KEY = "CURRENT_USER_KEY"
-    static let CURRENT_APP_KEY = "CURRENT_APP_KEY"
+    static let CURRENT_APPS_KEY = "CURRENT_APPS_KEY"
     static let APPS_LIST_KEY = "APPS_LIST_KEY"
     static let APP_GROUP_ID = "group.apphud.dashboard"
     static let TEAM_ID = "JLG6CF288G"
@@ -23,21 +23,19 @@ struct Constants {
 extension IntentPeriod {
     func periodTitle() -> String {
         switch self {
+        case .last_28_days:
+            return "Last 28 days"
+        case .last_7_days:
+            return "Last 7 days"
         case .today:
-            return "today".t
+            return "Today"
+        case .last_month:
+            return "Last Month"
         case .yesterday:
-            return "yesterday".t
-        case .week:
-            return "a week".t
-        case .four_weeks:
-            return "a month".t
-        case .three_months:
-            return "3 Months".t
-        case .year:
-            return "year".t
-        case .lifetime:
-            return "lifetime".t
-        default:
+            return "Yesterday"
+        case .this_month:
+            return "This Month"
+        case .unknown:
             return "Unknown"
         }
     }

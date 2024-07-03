@@ -23,17 +23,30 @@ class SessionStore: ObservableObject {
     @Published var apps: [AHApp] = [] { didSet { didChange.send(self) } }
     @Published var dashboard: Dashboard? { didSet { didChange.send(self) } }
 
-    @Published var currentApp: AHApp? {
+    var isLoading = false
+    
+    @Published var currentApps: [AHApp]? {
         didSet {
             didChange.send(self)
-            if currentApp != nil {
+            if currentApps != nil && !isMock {
                 if lastStartTime != nil && lastEndTime != nil {
-                    fetchDashboardFor(appID: currentApp!.id, startTime: lastStartTime!, endTime: lastEndTime!, fromWidget: false, completion: { _ in})
+                    fetchDashboardsFor(appIDs: currentApps!.map { $0.id }, startTime: lastStartTime!, endTime: lastEndTime!, fromWidget: false, completion: { _ in})
                 } else {
-                    fetchDashboardFor(appID: currentApp!.id, period: .today, fromWidget: false, completion: {_ in })
+                    fetchDashboardsFor(appIDs: currentApps!.map { $0.id }, period: .today, fromWidget: false, completion: {_ in })
                 }
             }
         }
+    }
+    
+    var isMock = false
+    
+    static func mock() -> SessionStore {
+        let store = SessionStore()
+        store.isMock = true
+        store.apps = [AHApp.mock, AHApp.mock2, AHApp.mock3]
+        store.currentApps = [AHApp.mock, AHApp.mock2, AHApp.mock3]
+        store.dashboard = Dashboard.mock()
+        return store
     }
     
     @Published var loading = true
@@ -44,6 +57,7 @@ class SessionStore: ObservableObject {
         defaults = UserDefaults(suiteName: Constants.APP_GROUP_ID)!
     }
     func listen() {
+        if isMock {return}
         loading = true
         NetworkService.shared.me { [weak self] (user, token_pair) in
             self?.fetchApps()
@@ -59,19 +73,23 @@ class SessionStore: ObservableObject {
     }
 
     func fetchApps() {
+        if isMock {return}
+        
         NetworkService.shared.fetchApps { (apps) in
             guard let apps = apps, apps.count > 0 else { return }
             
             DispatchQueue.main.async { [weak self] in
-                var app: AHApp!
-                if let id = self?.currentAppID {
-                    app = apps.first { (a) -> Bool in
-                        a.id == id
-                    }
-                } else {
-                    app = apps.first!
+                var selectedApps: [AHApp]?
+                
+                if let ids = self?.currentAppIDs {
+                    selectedApps = apps.filter({ ids.contains($0.id) })
+                } else if let app = apps.first {
+                    selectedApps = [app]
                 }
-                self?.selectApp(app)
+                
+                if self?.currentApps == nil {
+                    self?.selectApps(selectedApps ?? [])
+                }
                 self?.apps = apps
                 AppsManager.shared.saveApps(apps)
             }
@@ -104,53 +122,73 @@ class SessionStore: ObservableObject {
         }
     }
     
-    var currentAppID: String? {
-        defaults.string(forKey: Constants.CURRENT_APP_KEY)
+    var currentAppIDs: [String]? {
+        defaults.string(forKey: Constants.CURRENT_APPS_KEY)?.components(separatedBy: ",")
     }
     
-    func selectApp(_ app: AHApp) {
-        defaults.setValue(app.id, forKey: Constants.CURRENT_APP_KEY)
-        self.currentApp = app
+    func selectApps(_ apps: [AHApp]) {
+        defaults.setValue(apps.map { $0.id }.joined(separator: ","), forKey: Constants.CURRENT_APPS_KEY)
+        self.currentApps = apps
     }
 
-    func fetchDashboardFor(appID: String, period: IntentPeriod, fromWidget: Bool, completion: @escaping (Dashboard?) -> Void) {
+    func fetchDashboardsFor(appIDs: [String], period: IntentPeriod, fromWidget: Bool, completion: @escaping (Dashboard?) -> Void) {
         
-        let startTime: String
-        var endTime: String = Date().endOfDay.utcString
-        
-        switch period {
-        case .today, .unknown:
-            startTime = Date().startOfDay.utcString
-        case .yesterday:
-            startTime = Date().daysFromNow(-1).startOfDay.utcString
-            endTime = Date().daysFromNow(-1).endOfDay.utcString
-        case .week:
-            startTime = Date().daysFromNow(-7).utcString
-        case .four_weeks:
-            startTime = Date().daysFromNow(-28).utcString
-        case .three_months:
-            startTime = Date().monthsFromNow(-3).startOfMonth.utcString
-            endTime = Date().monthsFromNow(-1).endOfMonth.utcString
-        case .year:
-            startTime = Date().daysFromNow(-365).utcString
-        case .lifetime:
-            startTime = Date().daysFromNow(-3650).utcString
-        }
+        let dates = Self.datesFromPeriod(period)
+        let startTime = dates.0
+        let endTime = dates.1
 
-        fetchDashboardFor(appID: appID, startTime: startTime, endTime: endTime, fromWidget: fromWidget, completion: completion)
+        fetchDashboardsFor(appIDs: appIDs, startTime: startTime, endTime: endTime, fromWidget: fromWidget, completion: completion)
     }
     
-    func fetchDashboardFor(appID: String, startTime: String, endTime: String, fromWidget: Bool, completion: @escaping (Dashboard?) -> Void) {
+    func fetchDashboardsFor(appIDs: [String], startTime: String, endTime: String, fromWidget: Bool, completion: @escaping (Dashboard?) -> Void) {
         self.lastStartTime = startTime
         self.lastEndTime = endTime
-        NetworkService.shared.fetchDashboard(appId: appID, startTime: startTime, endTime: endTime) { dash in
+        self.isLoading = true
+        NetworkService.shared.fetchDashboards(appIds: appIDs, startTime: startTime, endTime: endTime) { dash in
             DispatchQueue.main.async { [weak self] in
                 self?.dashboard = dash
+                self?.isLoading = false
                 if !fromWidget {
                     WidgetCenter.shared.reloadAllTimelines()
                 }
                 completion(dash)
             }
         }
+    }
+    
+    static func datesFromPeriod(_ period: IntentPeriod) -> (String, String) {
+        let startTime: String
+        let endTime: String
+        let date: Date
+        switch period {
+        case .today, .unknown:
+            date = Date()
+            endTime = date.endOfDay.utcString
+        case .yesterday:
+            date = Date().daysFromNow(-1)
+            endTime = date.endOfDay.utcString
+        case .last_7_days:
+            date = Date().daysFromNow(-7)
+            endTime = Date().endOfDay.utcString
+        case .last_28_days:
+            date = Date().daysFromNow(-28)
+            endTime = Date().endOfDay.utcString
+        case .last_month:
+            date = Date()
+            startTime = date.monthsFromNow(-1).startOfMonth.startOfDay.utcString
+            endTime = date.monthsFromNow(-1).endOfMonth.startOfDay.utcString
+            return (startTime, endTime)
+        case .this_month:
+            date = Date().startOfMonth.startOfDay
+            endTime = Date().endOfDay.utcString
+        }
+        
+        guard let result = Date.getUTCStartEndTime(from: date.timeIntervalSince1970) else {
+            return ("", "")
+        }
+        
+        startTime = result.startTime.utcString
+        
+        return (startTime, endTime)
     }
 }

@@ -28,7 +28,7 @@ class BaseIntentHandler: NSObject {
     }
     
     @objc(defaultAppForConfiguration:) func defaultApp(for intent: ConfigurationIntent) -> IntentApp? {
-        guard let app = SessionStore().currentApp else { return nil }
+        guard let app = SessionStore().currentApps?.first else { return nil }
         
         return IntentApp(identifier: app.id, display: app.name)
     }
@@ -37,5 +37,15 @@ class BaseIntentHandler: NSObject {
 class Handler: BaseIntentHandler, ConfigurationIntentHandling {
     func provideAppOptionsCollection(for intent: ConfigurationIntent, with completion: @escaping (INObjectCollection<IntentApp>?, Error?) -> Void) {
         completion(prepareAppsObjects(), nil)
+    }
+    
+    func confirm(intent: ConfigurationIntent, completion: @escaping (ConfigurationIntentResponse) -> Void) {
+        if intent.app?.count ?? 0 > 10 {
+            let response = ConfigurationIntentResponse(code: .failure, userActivity: nil)
+            completion(response)
+        } else {
+            let response = ConfigurationIntentResponse(code: .success, userActivity: nil)
+            completion(response)
+        }
     }
 }

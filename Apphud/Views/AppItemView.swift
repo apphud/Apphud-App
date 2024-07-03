@@ -11,6 +11,7 @@ import struct Kingfisher.KFImage
 struct AppItemView: View {
     @EnvironmentObject var session: SessionStore
     var app: AHApp
+    var isSelected: Bool
     var body: some View {
         HStack {
             Group {
@@ -27,8 +28,9 @@ struct AppItemView: View {
                 }
             }.frame(width: 44, height: 44)
             Text(app.name).frame(maxWidth: .infinity, alignment: .leading)
-            if app.id == session.currentApp?.id {
-                Image("select_app_image")
+            if self.isSelected {
+                Spacer()
+                Image(systemName: "checkmark")
             }
         }
     }
@@ -36,6 +38,6 @@ struct AppItemView: View {
 
 struct AppItemView_Previews: PreviewProvider {
     static var previews: some View {
-        AppItemView(app: AHApp(id: "", name: "Diff", bundleId: "com", packageName: nil, iconUrl: "http://placehold.it/199"))
+        AppItemView(app: AHApp(id: "", name: "Diff", bundleId: "com", packageName: nil, iconUrl: "http://placehold.it/199"), isSelected: true).environmentObject(SessionStore.mock())
     }
 }

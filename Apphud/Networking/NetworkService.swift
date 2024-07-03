@@ -76,6 +76,61 @@ class NetworkService {
         requestArray(Router.getApps, callback: callback)
     }
 
+    func fetchDashboards(appIds: [String], startTime: String, endTime: String, callback: @escaping (Dashboard?) -> Void) {
+        Task {
+            let dash = await fetchMultiDashboard(appIds: appIds, startTime: startTime, endTime: endTime)
+            Task { @MainActor in
+                callback(dash)
+            }
+        }
+    }
+
+    func fetchMultiDashboard(appIds: [String], startTime: String, endTime: String) async -> Dashboard? {
+        await withTaskGroup(of: (Dashboard?, String).self) { taskGroup in
+            var dashboards: [(Dashboard, String)] = []
+            
+            for appId in appIds {
+                taskGroup.addTask {
+                    await self.fetchDashboard(appId: appId, startTime: startTime, endTime: endTime)
+                }
+            }
+            
+            for await dashboardTuple in taskGroup {
+                if let dashboard = dashboardTuple.0 {
+                    dashboards.append((dashboard, dashboardTuple.1))
+                }
+            }
+            
+            if dashboards.count != appIds.count {
+                return nil
+            }
+            
+            if let firstDash = dashboards.first {
+                var newDash = firstDash.0
+                let firstAppId = firstDash.1
+                
+                for dashTuple in dashboards {
+                    if (dashTuple.1 != firstAppId) {
+                        newDash = Dashboard.combineMultiDashboard(first: newDash, second: dashTuple.0)
+                    }
+                }
+                
+                return newDash
+            }
+            
+            return nil
+        }
+    }
+
+    func fetchDashboard(appId: String, startTime: String, endTime: String) async -> (Dashboard?, String) {
+        // Simulate network call
+        return await withCheckedContinuation { continuation in
+            fetchDashboard(appId: appId, startTime: startTime, endTime: endTime) { dashboard in
+                continuation.resume(returning: (dashboard, appId))
+            }
+        }
+    }
+    
     func fetchDashboard(appId: String, startTime: String, endTime: String, callback: @escaping (Dashboard?) -> Void) {
         
         Log("Fetch Dashboard: \(appId), startTime: \(startTime), endTime: \(endTime)")
@@ -96,6 +151,7 @@ class NetworkService {
         fetchRangeDashboard(appId: appId, startTime: startTime, endTime: endTime) { dash in
             dashRange = dash
             dashRangeLoaded = true
+            Log("Fetched Range Dashboard: \(appId), startTime: \(startTime), endTime: \(endTime)")
             if dashNowLoaded {
                 finalBlock(dashNow, dashRange)
             }
@@ -104,6 +160,7 @@ class NetworkService {
         fetchNowDashboard(appId: appId) { dash in
             dashNow = dash
             dashNowLoaded = true
+            Log("Fetched Now Dashboard: \(appId), startTime: \(startTime), endTime: \(endTime)")
             if dashRangeLoaded {
                 finalBlock(dashNow, dashRange)
             }
@@ -184,6 +241,9 @@ class NetworkService {
     }
 
     func prettyLog(data: Data?, request: URLRequest?) {
+        
+        return
+        
         do {
             if let data = data, let urlString = request?.url?.absoluteString, let dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any] {
                 let json = try JSONSerialization.data(withJSONObject: dictionary, options: .prettyPrinted)

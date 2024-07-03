@@ -9,15 +9,15 @@ import WidgetKit
 import SwiftUI
 import Intents
 
-let UPDATE_POLICY_TIMER: TimeInterval = 60*10 // 10 minutes
+let UPDATE_POLICY_TIMER: TimeInterval = 60*30 // 30 minutes
 
 struct Provider: IntentTimelineProvider {
     func placeholder(in context: Context) -> ApphudWidgetEntry {
-        ApphudWidgetEntry(date: Date(), configuration: ConfigurationIntent(), dashboard: Dashboard.mock, user: User.mock, app: AHApp.mock)
+        ApphudWidgetEntry(date: Date(), configuration: ConfigurationIntent(), dashboard: Dashboard.mock(), user: User.mock, apps: [AHApp.mock])
     }
 
     func getSnapshot(for configuration: ConfigurationIntent, in context: Context, completion: @escaping (ApphudWidgetEntry) -> ()) {
-        let entry = ApphudWidgetEntry(date: Date(), configuration: configuration, dashboard: Dashboard.mock, user: User.mock, app: AHApp.mock)
+        let entry = ApphudWidgetEntry(date: Date(), configuration: configuration, dashboard: Dashboard.mock(), user: User.mock, apps: [AHApp.mock])
         completion(entry)
     }
 
@@ -26,14 +26,17 @@ struct Provider: IntentTimelineProvider {
         let session = SessionStore()
 
         if let user = AuthService.shared.currentUser {
-            if let appId = configuration.app?.identifier,
-               let app = AppsManager.shared.findApp(appId) {
+            if let intentApps = configuration.app {
+                let appIds = intentApps.map { $0.identifier ?? "Unknown" }
+                
+                let apps = AppsManager.shared.findApps(appIds)
+                
                 let period = configuration.period
                 
-                session.fetchDashboardFor(appID: appId, period: period, fromWidget: true) { (dashboard) in
+                session.fetchDashboardsFor(appIDs: appIds.suffix(10), period: period, fromWidget: true) { (dashboard) in
                     guard let dashboard = dashboard else { return }
                     let updateDate = Date().advanced(by: UPDATE_POLICY_TIMER)
-                    let entry = ApphudWidgetEntry(date: Date(), configuration: configuration, dashboard: dashboard, user: user, app: app)
+                    let entry = ApphudWidgetEntry(date: Date(), configuration: configuration, dashboard: dashboard, user: user, apps: apps)
                     entries.append(entry)
 
                     DispatchQueue.main.async {
@@ -43,7 +46,7 @@ struct Provider: IntentTimelineProvider {
                 }
             }
         } else {
-            let timeline = Timeline(entries: [ApphudWidgetEntry(date: Date(), configuration: configuration, dashboard: nil, user: nil, app: nil)], policy: .never)
+            let timeline = Timeline(entries: [ApphudWidgetEntry(date: Date(), configuration: configuration, dashboard: nil, user: nil, apps: [])], policy: .never)
             completion(timeline)
         }
     }
@@ -54,7 +57,7 @@ struct ApphudWidgetEntry: TimelineEntry {
     let configuration: ConfigurationIntent
     let dashboard: Dashboard?
     let user: User?
-    let app: AHApp?
+    let apps: [AHApp]
 }
 
 struct WidgetEntryView: View {
@@ -69,15 +72,14 @@ struct WidgetEntryView: View {
                 VStack {
                     Spacer()
                     Text("Please, open app and login first".t)
-                        .font(.body)
-                        .padding()
+                        .font(.system(size: 17))
                         .multilineTextAlignment(.center)
                         .foregroundColor(.white)
                     Spacer()
                 }
                 Spacer()
             }
-            .background(Color.accentColor)
+            .widgetBackground(Color.accentColor)
         }
     }
 }
@@ -95,37 +97,57 @@ struct ApphudWidget: Widget {
     }
 }
 
+extension View {
+    func widgetBackground(_ backgroundView: some View) -> some View {
+        if #available(iOSApplicationExtension 17.0, *) {
+            return containerBackground(for: .widget) {
+                backgroundView
+            }
+        } else {
+            return background(backgroundView)
+        }
+    }
+}
+
 struct AppWidgetView: View {
     var entry: Provider.Entry
     
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Spacer()
-                Text(metricName)
-                    .font(.system(size: 14, weight: .regular, design: .default))
+                Text(metricName + " (" + entry.configuration.period.periodTitle().lowercased() + ")")
+                    .font(.system(size: 15, weight: .regular, design: .default))
                     .minimumScaleFactor(0.6)
+                    .lineLimit(2)
                     .frame(minHeight: 20, alignment: .leading)
                 Text("\(metricString)")
                     .bold()
                     .lineLimit(1)
-                    .font(.system(size: 27, weight: .semibold, design: .default))
+                    .font(.system(size: 20, weight: .semibold, design: .default))
                     .minimumScaleFactor(0.5)
                 Spacer()
-                Text("Last checked at".t)
-                Text(entry.date, style: .time)
+                Text("Last checked at".t + " ").font(.system(size: 9)) + Text(entry.date, style: .time).font(.system(size: 9))
                 Spacer()
-                Text("\(entry.app!.name)")
+                Text("\(appsNames())")
                     .font(.footnote)
-                    .padding(.bottom, 4)
-                Spacer()
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.4)
             }
+            .foregroundColor(.white)
             .font(.footnote)
-            .padding()
             Spacer()
         }
-        .background(Color.accentColor)
-        .foregroundColor(.white)
+        .widgetBackground(Color.accentColor)
+    }
+    
+    func appsNames() -> String {
+        if (entry.apps.count == 1) {
+            entry.apps.first!.name
+        } else if (entry.apps.count == 0) {
+            "No apps selected"
+        } else {
+            entry.apps.first!.name + "\nand " + String(entry.apps.count - 1) + " more"
+        }
     }
     
     var metricName: String {
@@ -134,7 +156,7 @@ struct AppWidgetView: View {
     
     var metricString: String {
         if entry.dashboard == nil {
-            return "Couldn't fetch dashboard"
+            return "Error"
         } else {
             return entry.dashboard?.metricValue(intentMetric: entry.configuration.metric) ?? "Unknown Value"
         }
@@ -149,19 +171,19 @@ struct WidgetsBundle: WidgetBundle {
     }
 }
 
-struct ApphudWidget_Previews: PreviewProvider {
+struct ApphudWidgetView_Previews: PreviewProvider {
     static var previews: some View {
         
         let config = ConfigurationIntent()
         config.metric = .proceeds
         
-        return WidgetEntryView(
+        return AppWidgetView(
             entry: ApphudWidgetEntry(
                 date: Date(),
                 configuration: config,
-                dashboard: Dashboard.mock,
+                dashboard: Dashboard.mock(),
                 user: User.mock,
-                app: AHApp.mock
+                apps: [AHApp.mock]
             )
         ).previewContext(WidgetPreviewContext(family: .systemSmall))
     }
