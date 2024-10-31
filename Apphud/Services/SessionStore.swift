@@ -144,10 +144,11 @@ class SessionStore: ObservableObject {
         self.lastStartTime = startTime
         self.lastEndTime = endTime
         self.isLoading = true
-        NetworkService.shared.fetchDashboards(appIds: appIDs, startTime: startTime, endTime: endTime) { dash in
-            DispatchQueue.main.async { [weak self] in
-                self?.dashboard = dash
-                self?.isLoading = false
+        Task {
+            let dash = await NetworkService.shared.fetchDashboard(appIds: appIDs, startTime: startTime, endTime: endTime)
+            Task { @MainActor in
+                self.dashboard = dash
+                self.isLoading = false
                 if !fromWidget {
                     WidgetCenter.shared.reloadAllTimelines()
                 }

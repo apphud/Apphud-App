@@ -20,8 +20,9 @@ enum Router: URLRequestConvertible {
 
     case login(String, String)
     case getApps
-    case getNowDashboard(String)
-    case getRangeDashboard(String, String, String)
+    case getNowDashboard([String])
+    case getNowMRRDashboard([String])
+    case getRangeDashboard([String], String, String)
     case refreshToken
     case logout
     case me
@@ -30,7 +31,7 @@ enum Router: URLRequestConvertible {
         switch self {
         case .getApps, .me:
             return .get
-        case .login(_, _), .refreshToken, .getNowDashboard(_), .getRangeDashboard(_, _, _):
+        case .login(_, _), .refreshToken, .getNowDashboard(_), .getRangeDashboard(_, _, _), .getNowMRRDashboard(_):
             return .post
         case .logout:
             return .delete
@@ -43,6 +44,8 @@ enum Router: URLRequestConvertible {
             return "apps"
         case .getNowDashboard(_):
             return "api/v1/dash/now"
+        case .getNowMRRDashboard(_):
+            return "api/v1/dash/now_mrr"
         case .getRangeDashboard(_, _, _):
             return "api/v1/dash/range"
         case .login(_, _):
@@ -63,6 +66,8 @@ enum Router: URLRequestConvertible {
         case .login(let email, let pass):
             return ["email": email, "password": pass]
         case .getNowDashboard(let appID):
+            return ["app": appID]
+        case .getNowMRRDashboard(let appID):
             return ["app": appID]
         case .getRangeDashboard(let appID, let startTime, let endTime):
             return ["app": appID,

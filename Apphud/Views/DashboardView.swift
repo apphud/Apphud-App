@@ -34,9 +34,9 @@ struct DashboardView: View {
                         
                         if let dash = session.dashboard, !session.isLoading {
                             List {
-                                ForEach(dash.groups, id:\.uniqueName) { section in
+                                ForEach(dash.groups, id:\.formattedName) { section in
                                     Section(header: HStack {
-                                        Text(section.uniqueName)
+                                        Text(section.formattedName)
                                             .font(.system(size: 17, weight: .regular, design: .default))
                                             .foregroundColor((Color(hex: "97ADC6")))
                                             .padding()

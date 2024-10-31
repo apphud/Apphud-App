@@ -70,7 +70,7 @@ class Dashboard: Codable {
                     
                 var newValues = [DashboardValue]()
                 
-                for value in metric.values {
+                for value in metric.values ?? [] {
                     let secondValue = secondMetric?.find(name: value.name)
                     let newValue = DashboardValue(name: value.name, value: value.value + (secondValue?.value ?? 0))
                     newValues.append(newValue)
@@ -103,14 +103,14 @@ class Dashboard: Codable {
 }
 
 struct DashboardMetricGroup: Codable {
-    var uniqueName: String {
-        if items.count == 1 {
-            return items.first!.name
+    var formattedName: String {
+        if name == "Money" && (["mrr", "arr", "Monthly Recurring Revenue", "MRR", "ARR", "Annual Recurring Revenue"].contains(items.first?.name)) {
+            return "Recurring Revenue"
         } else {
             return name
         }
     }
-    let name: String
+    fileprivate let name: String
     let items: [DashboardMetric]
 }
 
@@ -123,21 +123,21 @@ struct DashboardMetric: Codable {
     var name: String
     var type: String
     var chart_id: String?
-    var values: [DashboardValue]
+    var values: [DashboardValue]?
     var description: String
     var isMoney: Bool { type == "money" }
-    var value: Double { values.first(where: { $0.name == "Value" })?.value ?? 0 }
+    var value: Double { values?.first(where: { $0.name == "Value" })?.value ?? 0 }
     var activeValue: Int? {
-        let active = values.first(where: { $0.name == "Active" })?.value
+        let active = values?.first(where: { $0.name == "Active" })?.value
         return active != nil ? Int(active!) : nil
     }
     var inactiveValue: Int? {
-        let inactive = values.first(where: { $0.name == "Inactive" })?.value
+        let inactive = values?.first(where: { $0.name == "Inactive" })?.value
         return inactive != nil ? Int(inactive!) : nil
     }
     
     func find(name: String) -> DashboardValue? {
-        for v in values {
+        for v in values ?? [] {
             if v.name == name {
                 return v
             }

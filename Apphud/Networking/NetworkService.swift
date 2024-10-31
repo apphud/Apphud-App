@@ -76,120 +76,65 @@ class NetworkService {
         requestArray(Router.getApps, callback: callback)
     }
 
-    func fetchDashboards(appIds: [String], startTime: String, endTime: String, callback: @escaping (Dashboard?) -> Void) {
-        Task {
-            let dash = await fetchMultiDashboard(appIds: appIds, startTime: startTime, endTime: endTime)
-            Task { @MainActor in
-                callback(dash)
-            }
-        }
-    }
+    func fetchDashboard(appIds: [String], startTime: String, endTime: String) async -> Dashboard? {
+        
+        Log("Fetch Dashboard For AppIds: \(appIds), startTime: \(startTime), endTime: \(endTime)")
 
-    func fetchMultiDashboard(appIds: [String], startTime: String, endTime: String) async -> Dashboard? {
-        await withTaskGroup(of: (Dashboard?, String).self) { taskGroup in
-            var dashboards: [(Dashboard, String)] = []
+        async let dashRange: Dashboard? = fetchRangeDashboard(appIds: appIds, startTime: startTime, endTime: endTime)
+        async let dashNow: Dashboard? = fetchNowDashboard(appIds: appIds)
+        async let dashMRR: Dashboard? = fetchMRRDashboard(appIds: appIds)
+        
+        if await dashRange != nil, await dashMRR != nil, await dashNow != nil {
             
-            for appId in appIds {
-                taskGroup.addTask {
-                    await self.fetchDashboard(appId: appId, startTime: startTime, endTime: endTime)
-                }
-            }
-            
-            for await dashboardTuple in taskGroup {
-                if let dashboard = dashboardTuple.0 {
-                    dashboards.append((dashboard, dashboardTuple.1))
-                }
-            }
-            
-            if dashboards.count != appIds.count {
-                return nil
-            }
-            
-            if let firstDash = dashboards.first {
-                var newDash = firstDash.0
-                let firstAppId = firstDash.1
-                
-                for dashTuple in dashboards {
-                    if (dashTuple.1 != firstAppId) {
-                        newDash = Dashboard.combineMultiDashboard(first: newDash, second: dashTuple.0)
-                    }
-                }
-                
-                return newDash
-            }
-            
+            let mixedDash = Dashboard.merge(first: await dashNow!, second: await dashRange!)
+            let finalDash = Dashboard.merge(first: await dashMRR!, second: mixedDash)
+            return finalDash
+        } else {
             return nil
         }
     }
-
-    func fetchDashboard(appId: String, startTime: String, endTime: String) async -> (Dashboard?, String) {
-        // Simulate network call
-        return await withCheckedContinuation { continuation in
-            fetchDashboard(appId: appId, startTime: startTime, endTime: endTime) { dashboard in
-                continuation.resume(returning: (dashboard, appId))
+    
+    private func fetchRangeDashboard(appIds: [String], startTime: String, endTime: String) async -> Dashboard? {
+        await withUnsafeContinuation { continuation in
+            session.request(Router.getRangeDashboard(appIds, startTime, endTime)).validate().responseDecodable(of: Dashboard.self, decoder: decoder) { response in
+                self.prettyLog(data: response.data, request: response.request)
+                if let value = response.value {
+                    continuation.resume(returning: value)
+                } else if let error = response.error {
+                    Log("WebAPI error = \(error)")
+                    continuation.resume(returning: nil)
+                }
             }
         }
     }
     
-    func fetchDashboard(appId: String, startTime: String, endTime: String, callback: @escaping (Dashboard?) -> Void) {
-        
-        Log("Fetch Dashboard: \(appId), startTime: \(startTime), endTime: \(endTime)")
-        
-        var dashRangeLoaded = false
-        var dashNowLoaded = false
-        var dashRange: Dashboard? = nil
-        var dashNow: Dashboard? = nil
-        
-        let finalBlock: ((Dashboard?, Dashboard?) -> Void) = { d1, d2 in
-            if d1 != nil && d2 != nil {
-                callback(Dashboard.merge(first: d1!, second: d2!))
-            } else {
-                callback(d1 ?? d2)
+    private func fetchNowDashboard(appIds: [String]) async -> Dashboard? {
+        await withUnsafeContinuation { continuation in
+            session.request(Router.getNowDashboard(appIds)).validate().responseDecodable(of: Dashboard.self, decoder: decoder) { response in
+                self.prettyLog(data: response.data, request: response.request)
+
+                if let value = response.value {
+                    continuation.resume(returning: value)
+                } else if let error = response.error {
+                    Log("WebAPI error = \(error)")
+                    continuation.resume(returning: nil)
+                }
             }
         }
         
-        fetchRangeDashboard(appId: appId, startTime: startTime, endTime: endTime) { dash in
-            dashRange = dash
-            dashRangeLoaded = true
-            Log("Fetched Range Dashboard: \(appId), startTime: \(startTime), endTime: \(endTime)")
-            if dashNowLoaded {
-                finalBlock(dashNow, dashRange)
-            }
-        }
-        
-        fetchNowDashboard(appId: appId) { dash in
-            dashNow = dash
-            dashNowLoaded = true
-            Log("Fetched Now Dashboard: \(appId), startTime: \(startTime), endTime: \(endTime)")
-            if dashRangeLoaded {
-                finalBlock(dashNow, dashRange)
-            }
-        }
     }
     
-    private func fetchRangeDashboard(appId: String, startTime: String, endTime: String, callback: @escaping (Dashboard?) -> Void) {
-        
-        session.request(Router.getRangeDashboard(appId, startTime, endTime)).validate().responseDecodable(of: Dashboard.self, decoder: decoder) { response in
-            self.prettyLog(data: response.data, request: response.request)
+    private func fetchMRRDashboard(appIds: [String]) async -> Dashboard? {
+        await withUnsafeContinuation { continuation in
+            session.request(Router.getNowMRRDashboard(appIds)).validate().responseDecodable(of: Dashboard.self, decoder: decoder) { response in
+                self.prettyLog(data: response.data, request: response.request)
 
-            if let value = response.value {
-                callback(value)
-            } else if let error = response.error {
-                Log("WebAPI error = \(error)")
-                callback(nil)
-            }
-        }
-    }
-    
-    private func fetchNowDashboard(appId: String, callback: @escaping (Dashboard?) -> Void) {
-        session.request(Router.getNowDashboard(appId)).validate().responseDecodable(of: Dashboard.self, decoder: decoder) { response in
-            self.prettyLog(data: response.data, request: response.request)
-
-            if let value = response.value {
-                callback(value)
-            } else if let error = response.error {
-                Log("WebAPI error = \(error)")
-                callback(nil)
+                if let value = response.value {
+                    continuation.resume(returning: value)
+                } else if let error = response.error {
+                    Log("WebAPI error = \(error)")
+                    continuation.resume(returning: nil)
+                }
             }
         }
     }
@@ -242,7 +187,7 @@ class NetworkService {
 
     func prettyLog(data: Data?, request: URLRequest?) {
         
-        return
+//        return
         
         do {
             if let data = data, let urlString = request?.url?.absoluteString, let dictionary = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any] {
